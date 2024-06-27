@@ -8,22 +8,26 @@ from bs4 import BeautifulSoup
 
 def get_website(url: str):
     """ Gets URL for recent 50 history questions """
+
     return req.get(url)
 
 
 def soup_website(response: str):
     """ Web scrapes response of website and parses it. """
+
     return BeautifulSoup(response.text, features="html.parser")
 
 
 def get_all_questions(soup: str):
     """ Retrieves all questions """
+
     return soup.find_all("div", class_="js-post-summary")
 
 
 def get_questions_details(questions: str):
     """ Retrieves details for each question: title, tags, votes, answer count, views,
         username, answers and its details"""
+
     for question in questions:
         title = get_question_title(question)
         tags = get_question_tags(question)
@@ -43,18 +47,21 @@ def get_questions_details(questions: str):
 
 def get_question_title(question: str):
     """ Retrieves question title """
+
     return question.find(
         "h3", class_="s-post-summary--content-title").get_text().strip()
 
 
 def get_question_tags(question: str):
     """ Retrieves question tags """
+
     return [tag.get_text() for tag in question.find_all(
         "li", class_="d-inline mr4 js-post-tag-list-item")]
 
 
 def get_question_stats(question: str):
     """ Retrieves statistics for a question regarding: votes, answer count, views, username. """
+
     all_stats = question.find_all(
         "div", class_="s-post-summary--stats-item")
     votes = 0
@@ -80,13 +87,13 @@ def get_question_stats(question: str):
 
 
 def get_answers(question):
-    """ Retrieves all answers for a questions and its details" answer, username, vote"""
+    """ Retrieves all answers for a questions and its details" answer, username, vote. """
+
     link = f"https://history.stackexchange.com/{
         question.find("a", class_="s-link").get("href")}"
 
-    question_response = req.get(link)
-    print(link)
-    soup = BeautifulSoup(question_response.text, features="html.parser")
+    question_response = get_website(link)
+    soup = soup_website(question_response)
 
     all_answers = soup.find_all("div", class_="answer js-answer")
     answers = []
@@ -101,12 +108,17 @@ def get_answers(question):
     return answers
 
 
-if __name__ == "__main__":
+def extract_stack_exchange_history_data():
+    """ Extracts stack exchange data for history questions"""
+
     response = get_website(
         "https://history.stackexchange.com/questions?tab=Newest")
     soup = soup_website(response)
 
     questions = get_all_questions(soup)
     result = get_questions_details(questions)
-
     print(len(questions))
+
+
+if __name__ == "__main__":
+    extract_stack_exchange_history_data()
