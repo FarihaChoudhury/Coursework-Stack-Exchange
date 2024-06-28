@@ -2,4 +2,6 @@ beautifulsoup4
 pylint
 pytest
 requests
+psycopg2
+python-dotenv
 
