@@ -1,4 +1,6 @@
 # Connects to database, drops and builds table, displays tables.
 source .env
-export PGPASSWORD=$DATABASE_PASSWORD
-psql --host $DATABASE_IP -U $DATABASE_USERNAME -p $DATABASE_PORT -d $DATABASE_NAME -f schema.sql
+export PGPASSWORD=$DB_PASSWORD
+# psql --host $DB_IP -U $DB_USERNAME -p $DB_PORT -d $DB_NAME -f schema.sql
+psql --host $DB_IP -U $DB_USERNAME -p $DB_PORT -d $DB_NAME -f queries.sql
+
