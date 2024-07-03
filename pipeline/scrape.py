@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 def get_website(url: str):
     """ Gets URL for recent 50 history questions """
 
-    return req.get(url)
+    return req.get(url, timeout=15)
 
 
 def soup_website(response: str):
@@ -31,7 +31,7 @@ def get_questions_details(questions: str) -> list[dict]:
     questions_data = []
     for question in questions:
 
-        votes, answers_count, views, username = get_question_stats(question)
+        votes, views, username = get_question_stats(question)
         questions_data.append(
             {
                 'question_id': get_question_id(question),
@@ -49,8 +49,8 @@ def get_questions_details(questions: str) -> list[dict]:
 def get_question_id(question: str) -> str:
     """ Retrieves id from question """
 
-    id = question.get('data-post-id')
-    return id if id else None
+    question_id = question.get('data-post-id')
+    return question_id if question_id else None
 
 
 def get_question_title(question: str) -> str:
@@ -74,7 +74,6 @@ def get_question_stats(question: str) -> str:
         "div", class_="s-post-summary--stats-item")
 
     votes = 0
-    answers_count = 0
     views = 0
 
     for stat in all_stats:
@@ -86,17 +85,15 @@ def get_question_stats(question: str) -> str:
         if stat_value.endswith('k'):
             stat_value = stat_value.replace('k', '000')
 
-        if stat_text == "votes" or stat_text == "vote":
+        if stat_text in ("vote", "votes"):
             votes = stat_value
-        if stat_text == "answers" or stat_text == "answer":
-            answers_count = stat_value
-        elif stat_text == "views" or stat_text == "view":
+        elif stat_text in ("view", "views"):
             views = stat_value
 
     username = question.find(
         "div", class_="s-user-card--link d-flex gs4").get_text().strip()
 
-    return votes, answers_count, views, username
+    return votes, views, username
 
 
 def get_answers(question) -> list[dict]:
@@ -112,7 +109,8 @@ def get_answers(question) -> list[dict]:
              'answer': answer.find(
                  'div', class_='s-prose js-post-body').get_text().strip(),
              'username': get_answer_author(answer),
-             'vote_count': answer.find('div', class_='js-vote-count').get_text().strip().replace('k', '000')})
+             'vote_count':
+                answer.find('div', class_='js-vote-count').get_text().strip().replace('k', '000')})
 
     return answers
 
@@ -149,8 +147,8 @@ def get_answer_author(answer: str) -> str:
 def get_answer_id(answer: str) -> str:
     """ Retrieves id from answer """
 
-    id = answer.get('data-answerid')
-    return id if id else None
+    answer_id = answer.get('data-answerid')
+    return answer_id if answer_id else None
 
 
 def extract_stack_exchange_history_data() -> dict:

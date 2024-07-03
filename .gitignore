@@ -8,3 +8,4 @@ terraform.tfvars
 .venv
 .env
 .pemkey
+pipeline/data.json

@@ -1,4 +1,4 @@
-# Coursework-Stack-Exchange
+# Sigma Labs Coursework: StackExchange History Page
 
 ## Pipeline:
 ETL pipeline to web scrape the StackExchange historical page for the latest 50 questions and update the database. 

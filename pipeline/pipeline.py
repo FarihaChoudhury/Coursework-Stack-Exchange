@@ -1,6 +1,8 @@
+""" Runs ETL pipeline """
+
+import logging
 import scrape
 import insert
-import logging
 
 
 def run_pipeline():

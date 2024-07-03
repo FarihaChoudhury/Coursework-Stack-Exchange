@@ -1,11 +1,13 @@
-from csv import DictReader
+""" Inserts web scraped data from StackExchange history page into an AWS RDS 
+    (Relational database). """
+
 import json
+from os import environ
+from dotenv import load_dotenv
 
 from psycopg2 import connect
 from psycopg2.extensions import connection, cursor
 from psycopg2.extras import RealDictCursor, execute_values
-from os import environ
-from dotenv import load_dotenv
 
 
 def get_connection() -> connection:
@@ -50,13 +52,13 @@ def upload_author(author: str, conn: connection) -> int:
         LIMIT 1;
     """
 
-    cursor = get_cursor(conn)
-    cursor.execute(query, (author, author))
+    cur = get_cursor(conn)
+    cur.execute(query, (author, author))
 
-    author_id = cursor.fetchall()[0]['author_id']
+    author_id = cur.fetchall()[0]['author_id']
 
     conn.commit()
-    cursor.close()
+    cur.close()
 
     return author_id
 
@@ -79,12 +81,12 @@ def upload_question(question_data: dict, author_id: int,  conn: connection) -> i
             views = EXCLUDED.views;
     """
 
-    cursor = get_cursor(conn)
-    cursor.execute(query, (question_id, author_id,
-                   question, votes, views))
+    cur = get_cursor(conn)
+    cur.execute(query, (question_id, author_id,
+                        question, votes, views))
 
     conn.commit()
-    cursor.close()
+    cur.close()
 
     return question_id
 
@@ -106,12 +108,12 @@ def upload_tag(tag: str, conn: connection) -> int:
         LIMIT 1;
     """
 
-    cursor = get_cursor(conn)
-    cursor.execute(query, (tag, tag))
-    tag_id = cursor.fetchall()[0]['tag_id']
+    cur = get_cursor(conn)
+    cur.execute(query, (tag, tag))
+    tag_id = cur.fetchall()[0]['tag_id']
 
     conn.commit()
-    cursor.close()
+    cur.close()
 
     return tag_id
 
@@ -147,12 +149,12 @@ def upload_answer(answer_data: dict, question_id: int, author_id: int, conn: con
             votes = EXCLUDED.votes;
     """
 
-    cursor = get_cursor(conn)
-    cursor.execute(query, (answer_id, answer, votes,
-                   question_id, author_id))
+    cur = get_cursor(conn)
+    cur.execute(query, (answer_id, answer, votes,
+                        question_id, author_id))
 
     conn.commit()
-    cursor.close()
+    cur.close()
 
     return answer_id
 
@@ -186,7 +188,7 @@ def insert_data_to_database(questions_data: dict):
         # insert author of answer and answer:
         for answer in question['answers']:
             answer_author_id = upload_author(answer['username'], conn)
-            answer_id = upload_answer(
+            upload_answer(
                 {'answer_id': answer['answer_id'],
                  'answer': answer['answer'],
                  'votes': answer['vote_count']
