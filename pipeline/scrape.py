@@ -2,6 +2,7 @@
     https://history.stackexchange.com/questions?tab=newest&pagesize=50.
     Retrieves details about each question and their answers. """
 
+from datetime import datetime
 import requests as req
 from bs4 import BeautifulSoup
 
@@ -32,10 +33,12 @@ def get_questions_details(questions: str) -> list[dict]:
     for question in questions:
 
         votes, views, username = get_question_stats(question)
+
         questions_data.append(
             {
                 'question_id': get_question_id(question),
                 'title': get_question_title(question),
+                'timestamp': get_question_timestamp(question),
                 'tags': get_question_tags(question),
                 'votes': votes,
                 'views': views,
@@ -65,6 +68,17 @@ def get_question_tags(question: str) -> list:
 
     return [tag.get_text() for tag in question.find_all(
         "li", class_="d-inline mr4 js-post-tag-list-item")]
+
+
+def get_question_timestamp(question: str) -> str:
+    """ Retrieves timestamp of when question was asked. """
+
+    time_element = question.find('time', class_='s-user-card--time')
+    if time_element and 'asked' in time_element.text:
+        timestamp = time_element.find(
+            'span', class_='relativetime').get('title')
+        return format_timestamp(timestamp)
+    return None
 
 
 def get_question_stats(question: str) -> str:
@@ -106,11 +120,12 @@ def get_answers(question) -> list[dict]:
 
         answers.append(
             {'answer_id': get_answer_id(answer),
-             'answer': answer.find(
-                 'div', class_='s-prose js-post-body').get_text().strip(),
+             'answer': get_answer_text(answer),
              'username': get_answer_author(answer),
-             'vote_count':
-                answer.find('div', class_='js-vote-count').get_text().strip().replace('k', '000')})
+             'vote_count': get_answer_votes(answer),
+             'timestamp': get_answer_timestamp(answer)
+             }
+        )
 
     return answers
 
@@ -129,6 +144,19 @@ def scrape_answer(question) -> list[str]:
     return all_answers
 
 
+def get_answer_id(answer: str) -> str:
+    """ Retrieves id from answer. """
+
+    answer_id = answer.get('data-answerid')
+    return answer_id if answer_id else None
+
+
+def get_answer_text(answer: str) -> str:
+    """ Extracts answer text. """
+    return answer.find(
+        'div', class_='s-prose js-post-body').get_text().strip()
+
+
 def get_answer_author(answer: str) -> str:
     """ Retrieves username of author of an answer to a question. """
 
@@ -144,11 +172,26 @@ def get_answer_author(answer: str) -> str:
     return username
 
 
-def get_answer_id(answer: str) -> str:
-    """ Retrieves id from answer """
+def get_answer_votes(answer: str) -> str:
+    """ Extracts votes for an answer. """
+    return answer.find(
+        'div', class_='js-vote-count').get_text().strip().replace('k', '000')
 
-    answer_id = answer.get('data-answerid')
-    return answer_id if answer_id else None
+
+def get_answer_timestamp(answer: str) -> str:
+    """ Retrieves timestamp of when question was asked. """
+
+    div = answer.find("div", class_="user-action-time fl-grow1")
+    if div and "answered" in div.text:
+        timestamp = div.find("span", class_="relativetime").get("title")
+        return format_timestamp(timestamp)
+    return None
+
+
+def format_timestamp(timestamp: str) -> str:
+    """ Formats extracted timestamp into Postgres timestamp datatype form. """
+
+    return datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%SZ")
 
 
 def extract_stack_exchange_history_data() -> dict:

@@ -28,6 +28,7 @@ CREATE TABLE Question (
     question TEXT NOT NULL,
     votes INT NOT NULL,
     views INT NOT NULL,
+    upload_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (question_id),
     FOREIGN KEY (author_id) REFERENCES Author(author_id)
@@ -59,6 +60,7 @@ CREATE TABLE Answer(
     votes INT NOT NULL,
     question_id INT NOT NULL,
     author_id INT NOT NULL,
+    upload_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY(answer_id),
     FOREIGN KEY(question_id) REFERENCES Question(question_id),

@@ -69,12 +69,13 @@ def upload_question(question_data: dict, author_id: int,  conn: connection) -> i
 
     question_id = question_data['question_id']
     question = question_data['question']
+    timestamp = question_data['timestamp']
     votes = question_data['votes']
     views = question_data['views']
 
     query = """
-        INSERT INTO Question (question_id, author_id, question, votes, views)
-            VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO Question (question_id, author_id, question, votes, views, upload_timestamp)
+            VALUES (%s, %s, %s, %s, %s, %s)
         ON CONFLICT (question_id)
         DO UPDATE SET
             votes = EXCLUDED.votes,
@@ -83,7 +84,7 @@ def upload_question(question_data: dict, author_id: int,  conn: connection) -> i
 
     cur = get_cursor(conn)
     cur.execute(query, (question_id, author_id,
-                        question, votes, views))
+                        question, votes, views, timestamp))
 
     conn.commit()
     cur.close()
@@ -140,10 +141,11 @@ def upload_answer(answer_data: dict, question_id: int, author_id: int, conn: con
     answer_id = answer_data['answer_id']
     answer = answer_data['answer']
     votes = answer_data['votes']
+    timestamp = answer_data['timestamp']
 
     query = """
-        INSERT INTO Answer (answer_id, answer, votes, question_id, author_id)
-            VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO Answer (answer_id, answer, votes, question_id, author_id, upload_timestamp)
+            VALUES (%s, %s, %s, %s, %s, %s)
         ON CONFLICT (answer_id)
         DO UPDATE SET
             votes = EXCLUDED.votes;
@@ -151,7 +153,7 @@ def upload_answer(answer_data: dict, question_id: int, author_id: int, conn: con
 
     cur = get_cursor(conn)
     cur.execute(query, (answer_id, answer, votes,
-                        question_id, author_id))
+                        question_id, author_id, timestamp))
 
     conn.commit()
     cur.close()
@@ -175,6 +177,7 @@ def insert_data_to_database(questions_data: dict):
         upload_question(
             {'question_id': question_id,
              'question': question['title'],
+             'timestamp': question['timestamp'],
              'votes': question['votes'],
              'views': question['views']
              },
@@ -191,7 +194,8 @@ def insert_data_to_database(questions_data: dict):
             upload_answer(
                 {'answer_id': answer['answer_id'],
                  'answer': answer['answer'],
-                 'votes': answer['vote_count']
+                 'votes': answer['vote_count'],
+                 'timestamp': answer['timestamp'],
                  },
                 question_id, answer_author_id, conn)
 
