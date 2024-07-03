@@ -6,6 +6,8 @@ provider "aws" {
     secret_key = var.AWS_SECRET_KEY
 }
 
+
+# RDS TO STORE STACKEXCHANGE SCRAPED DATA 
 resource "aws_db_instance" "stackexchange-db" {
     allocated_storage            = 10
     db_name                      = "c11farihastackexchangedb"
@@ -43,4 +45,161 @@ resource "aws_security_group" "db-security-group" {
 
 data "aws_vpc" "c11-vpc" {
     id = "vpc-04b15cce2398e57f7"
+}
+
+
+# ECS TASK - TO RUN PIPELINE: 
+data "aws_ecs_cluster" "c11-cluster" {
+    cluster_name = "c11-ecs-cluster"
+}
+
+data "aws_iam_role" "execution-role" {
+    name = "ecsTaskExecutionRole"
+}
+
+resource "aws_ecs_task_definition" "c11-Fariha-stack-exchange-ECS-pipeline-terraform" {
+  family = "c11-Fariha-stack-exchange-ECS-pipeline-terraform"
+  requires_compatibilities = ["FARGATE"]
+  network_mode = "awsvpc"
+  execution_role_arn = data.aws_iam_role.execution-role.arn
+  cpu = 1024
+  memory = 2048
+  container_definitions = jsonencode([
+    {
+      name = "c11-Fariha-stack-exchange-ECS-pipeline-terraform"
+      image = "129033205317.dkr.ecr.eu-west-2.amazonaws.com/c11-fariha-stack-exchange-pipeline:latest"
+      cpu = 10
+      memory = 512
+      essential = true
+      portMappings = [
+        {
+          containerPort = 80
+          hostPort      = 80
+        }
+      ]
+      environment= [
+                {
+                    "name": "ACCESS_KEY",
+                    "value": var.AWS_ACCESS_KEY
+                },
+                {
+                    "name": "SECRET_ACCESS_KEY",
+                    "value": var.AWS_SECRET_KEY
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": var.DB_NAME
+                },
+                {
+                    "name": "DB_USERNAME",
+                    "value": var.DB_USERNAME
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": var.DB_PASSWORD
+                },
+                {
+                    "name": "DB_IP",
+                    "value": var.DB_IP
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": var.DB_PORT
+                }
+            ]
+            logConfiguration = {
+                logDriver = "awslogs"
+                options = {
+                    "awslogs-create-group" = "true"
+                    "awslogs-group" = "/ecs/c11-Fariha-stack-exchange-ECS-pipeline-terraform"
+                    "awslogs-region" = "eu-west-2"
+                    "awslogs-stream-prefix" = "ecs"
+                }
+            }
+    },
+  ])
+}
+
+
+
+# EVENT BRIDGE - SCHEDULE ETL EVERY 9AM 
+data "aws_subnet" "c11-subnet-1" {
+  id = "subnet-0e6c6a8f959dae31a"
+}
+data "aws_subnet" "c11-subnet-2" {
+  id = "subnet-08781450402b81aa2"
+}
+data "aws_subnet" "c11-subnet-3" {
+  id = "subnet-07de213eeae1f6307"
+}
+
+data "aws_iam_policy_document" "c11-Fariha-event-bridge-policy-document-terraform" {
+    statement {
+            actions    = ["sts:AssumeRole"]
+            effect     = "Allow"
+            principals {
+                type        = "Service"
+                identifiers = ["scheduler.amazonaws.com"]
+            }
+    }
+}
+
+resource "aws_iam_role" "c11-Fariha-stack-exchange-etl-schedule-role-terraform"{
+    name= "c11-Fariha-stack-exchange-etl-schedule-role-terraform"
+    assume_role_policy = data.aws_iam_policy_document.c11-Fariha-event-bridge-policy-document-terraform.json
+
+}
+resource "aws_iam_role_policy" "c11-Fariha-stack-exchange-etl-schedule-role-policy-terraform" {
+    # attach policies to role: call state machine, send email and invoke lambda
+    name = "c11-Fariha-stack-exchange-etl-schedule-role-policy-terraform"
+    role = aws_iam_role.c11-Fariha-stack-exchange-etl-schedule-role-terraform.id
+    policy = jsonencode({
+    Statement = [ 
+        {
+            Action = ["ecs:RunTask"],
+            Effect = "Allow",
+            Resource = "${aws_ecs_task_definition.c11-Fariha-stack-exchange-ECS-pipeline-terraform.arn}"
+            Condition = {
+                ArnLike = {"ecs:cluster" = data.aws_ecs_cluster.c11-cluster.arn}
+            }
+        },
+        {
+            Action =  ["iam:PassRole"]
+            Effect   = "Allow"
+            Resource = "*"
+            Condition = {
+                StringLike = {"iam:PassedToService" = "ecs-tasks.amazonaws.com"}
+            }
+        },
+
+    ]
+  })
+}
+
+
+resource "aws_scheduler_schedule" "c11-Fariha-stack-exchange-etl-schedule-terraform" {
+    name       = "c11-Fariha-stack-exchange-etl-schedule-terraform"
+    group_name = "default"
+    
+    flexible_time_window {
+        mode = "OFF"
+    }
+    
+    schedule_expression = "cron(0 9 * * ? *)"
+    schedule_expression_timezone = "Europe/London"
+    
+    target {
+        arn = data.aws_ecs_cluster.c11-cluster.arn
+        role_arn = aws_iam_role.c11-Fariha-stack-exchange-etl-schedule-role-terraform.arn
+
+        ecs_parameters {
+            task_definition_arn = aws_ecs_task_definition.c11-Fariha-stack-exchange-ECS-pipeline-terraform.arn
+            launch_type = "FARGATE"
+
+            network_configuration {
+                assign_public_ip = true
+                subnets          = [data.aws_subnet.c11-subnet-1.id, data.aws_subnet.c11-subnet-2.id, data.aws_subnet.c11-subnet-3.id] 
+            }
+        }
+    }
 }

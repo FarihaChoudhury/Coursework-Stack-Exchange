@@ -68,7 +68,6 @@ CREATE TABLE Answer(
 
 INSERT INTO Author (author_username) VALUES ('3rdk') RETURNING author_id;
 INSERT INTO Question (question_id, author_id, question, votes, views) VALUES (1, 1, 'how old am i?', 2, 1);
--- INSERT INTO Tag (tag, question_id) VALUES ('gross', 1);
 INSERT INTO Tag (tag) VALUES ('gross');
 INSERT INTO Tag (tag) VALUES ('lovely');
 INSERT INTO Question_Tag_Assignment (question_id, tag_id) VALUES (1, 1);

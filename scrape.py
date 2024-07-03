@@ -4,7 +4,6 @@
 
 import requests as req
 from bs4 import BeautifulSoup
-import json
 
 
 def get_website(url: str):
@@ -164,10 +163,6 @@ def extract_stack_exchange_history_data() -> dict:
 
     questions = get_all_questions(soup)
     result = get_questions_details(questions)
-
-    # saves to file
-    # with open("data.json", "w") as fp:
-    #     json.dump(result, indent=4, fp=fp)
 
     print(len(questions))
 

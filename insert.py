@@ -160,7 +160,6 @@ def upload_answer(answer_data: dict, question_id: int, author_id: int, conn: con
 def insert_data_to_database(questions_data: dict):
     """ Uploads question data to AWS RDS database: author of question, question, question tags, 
         author of answers, answers. """
-    # questions_data = load_data()
 
     conn = get_connection()
 
