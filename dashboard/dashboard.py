@@ -210,13 +210,13 @@ def get_authors_with_most_questions_and_answers_display(conn):
 
     with tags_columns[0]:
         st.markdown(f"""<h4 style='font-size:{'18px'}; color:{
-            'black'};'> Users who have written the most questions: </h4>""", unsafe_allow_html=True)
+            'black'};'> Users who have written the most questions: 👥</h4>""", unsafe_allow_html=True)
         st.dataframe(connect.load_author_asks_most_questions(
             conn))
 
     with tags_columns[2]:
         st.markdown(f"""<h4 style='font-size:{'18px'}; color:{
-                    'black'};'> Users who have written the most answers: </h4>""", unsafe_allow_html=True)
+                    'black'};'> Users who have written the most answers: 👥</h4>""", unsafe_allow_html=True)
         st.dataframe(connect.load_author_writes_most_answers(conn))
 
 

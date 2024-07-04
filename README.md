@@ -27,8 +27,8 @@ Streamlit dashboard to display analytical data about StackExchange questions on 
 
 
 ## Entity-Relationship Diagram 
-![ER Diagram](er_diagram.png)
+![ER Diagram](diagrams/er_diagram.png)
 The schema for the RDS is in 3NF. 
 
 ## Architecture Diagram
-![Architecture Diagram](architecture_diagram.png)
+![Architecture Diagram](diagrams/architecture_diagram.png)
