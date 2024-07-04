@@ -1,5 +1,6 @@
 -- SELECT * FROM Author;
--- SELECT * FROM Question;
+SELECT COUNT(*) FROM Question;
+SELECT * FROM Question;
 -- SELECT * FROM Tag;
 -- SELECT * FROM Question_Tag_Assignment;
 -- SELECT * FROM Answer;
@@ -89,13 +90,13 @@
 
 
 -- -- tags associated with questions with most votes (shows attention) - sum of votes for tags 
-SELECT t.tag, SUM(q.votes) AS total_votes
-FROM Tag t 
-JOIN Question_Tag_Assignment qt ON t.tag_id = qt.tag_id
-JOIN Question q ON q.question_id = qt.question_id
-GROUP BY t.tag
-ORDER BY total_votes DESC
-LIMIT 10;
+-- SELECT t.tag, SUM(q.votes) AS total_votes
+-- FROM Tag t 
+-- JOIN Question_Tag_Assignment qt ON t.tag_id = qt.tag_id
+-- JOIN Question q ON q.question_id = qt.question_id
+-- GROUP BY t.tag
+-- ORDER BY total_votes DESC
+-- LIMIT 10;
 
 -- -- tags associated with questions with most answers (shows attention) - sum of answers for tags 
 -- SELECT t.tag, COUNT(a.answer_id) AS total_answers

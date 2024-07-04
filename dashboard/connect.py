@@ -1,15 +1,12 @@
-""" Redshift database connection functions for T3 dashboard."""
+""" RDS database connection functions for Stack Exchange History page dashboard."""
 
 from os import environ
-from dotenv import load_dotenv
 import logging
 
+from dotenv import load_dotenv
 from pandas import DataFrame
-
-
 from psycopg2 import connect
-from psycopg2.extensions import connection, cursor
-from psycopg2.extras import RealDictCursor, execute_values
+from psycopg2.extensions import connection
 
 
 def get_connection() -> connection:
@@ -53,7 +50,7 @@ def load_most_popular_tags(conn: connection) -> DataFrame:
 
 
 def load_most_popular_tags_this_week(conn: connection) -> DataFrame:
-    """ Returns DataFrame of tags that appeared the most. """
+    """ Returns DataFrame of tags that appeared the most within past week. """
 
     with conn.cursor() as cur:
         cur.execute("""
@@ -74,6 +71,8 @@ def load_most_popular_tags_this_week(conn: connection) -> DataFrame:
 
 
 def load_num_questions_asked_before_12pm(conn: connection) -> DataFrame:
+    """ Returns DataFrame of number of questions asked before 12pm. """
+
     with conn.cursor() as cur:
         cur.execute("""
             SELECT DATE_PART('hour', q.upload_timestamp) AS upload_hour,
@@ -90,6 +89,8 @@ def load_num_questions_asked_before_12pm(conn: connection) -> DataFrame:
 
 
 def load_num_questions_asked_between_12_5pm(conn: connection) -> DataFrame:
+    """ Returns DataFrame of number of questions asked between 12pm and 5pm. """
+
     with conn.cursor() as cur:
         cur.execute("""
             SELECT DATE_PART('hour', q.upload_timestamp) AS upload_hour,
@@ -108,6 +109,8 @@ def load_num_questions_asked_between_12_5pm(conn: connection) -> DataFrame:
 
 
 def load_num_questions_asked_after_5pm(conn: connection) -> DataFrame:
+    """ Returns DataFrame of number of questions asked after 5pm. """
+
     with conn.cursor() as cur:
         cur.execute("""
             SELECT DATE_PART('hour', q.upload_timestamp) AS upload_hour,
@@ -125,6 +128,8 @@ def load_num_questions_asked_after_5pm(conn: connection) -> DataFrame:
 
 
 def load_tags_for_questions_with_most_votes(conn: connection) -> DataFrame:
+    """ Returns DataFrame of tags for questions that have most votes. """
+
     with conn.cursor() as cur:
         cur.execute("""
             SELECT t.tag, SUM(q.votes) AS total_votes
@@ -143,6 +148,8 @@ def load_tags_for_questions_with_most_votes(conn: connection) -> DataFrame:
 
 
 def load_tags_for_questions_with_most_answers(conn: connection) -> DataFrame:
+    """ Returns DataFrame of tags for questions that have most answers. """
+
     with conn.cursor() as cur:
         cur.execute("""
             SELECT t.tag, COUNT(a.answer_id) AS total_answers
@@ -162,6 +169,8 @@ def load_tags_for_questions_with_most_answers(conn: connection) -> DataFrame:
 
 
 def load_author_asks_most_questions(conn: connection) -> DataFrame:
+    """ Returns DataFrame of authors who ask most questions. """
+
     with conn.cursor() as cur:
         cur.execute("""
             SELECT a.author_username, a.author_id, COUNT(q.question_id) AS num_questions_asked
@@ -179,6 +188,8 @@ def load_author_asks_most_questions(conn: connection) -> DataFrame:
 
 
 def load_author_writes_most_answers(conn: connection) -> DataFrame:
+    """ Returns DataFrame of authors who answer most questions. """
+
     with conn.cursor() as cur:
         cur.execute("""
             SELECT a.author_username, a.author_id, COUNT(aw.answer_id) AS num_answers_written

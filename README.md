@@ -9,9 +9,9 @@ This has been automated on the cloud to be triggered at 9am every morning.
 
 
 ## Dashboard: 
-Streamlit dashboard to display analytical data about StackExchange questions on the historical page. 
+Streamlit dashboard to display analytical data about StackExchange questions on the history page. 
 
-#### Command ro run locally:
+#### Command to run locally:
 * Run ```streamlit run dashboard.py``` from the dashboard directory. 
 
 
@@ -24,3 +24,11 @@ Streamlit dashboard to display analytical data about StackExchange questions on 
 - AWS ECS service to run the dashboard continuously.
 - Docker to containerize pipeline and dashboard code.
 - Terraform to create code as an infrastructure. 
+
+
+## Entity-Relationship Diagram 
+![ER Diagram](er_diagram.png)
+The schema for the RDS is in 3NF. 
+
+## Architecture Diagram
+![Architecture Diagram](architecture_diagram.png)

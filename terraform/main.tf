@@ -19,13 +19,15 @@ resource "aws_db_instance" "stackexchange-db" {
     performance_insights_enabled = false
     skip_final_snapshot          = true
     db_subnet_group_name         = "c11-public-subnet-group"
-    vpc_security_group_ids       = [aws_security_group.db-security-group.id]
+    vpc_security_group_ids       = [aws_security_group.c11-fariha-stack-exchange-RDS-sg-terrafrom.id]
+    # sg-0ce13082d76a6ba2e ^
     username                     = var.DB_USERNAME
     password                     = var.DB_PASSWORD
 }
 
-resource "aws_security_group" "db-security-group" {
-    name = "c11-fariha-stack-exchange-sg"
+resource "aws_security_group" "c11-fariha-stack-exchange-RDS-sg-terrafrom" {
+    name = "c11-fariha-stack-exchange-RDS-sg-terrafrom"
+    description = "Security group for connecting to RDS database"
     vpc_id = data.aws_vpc.c11-vpc.id
 
     egress {
@@ -201,5 +203,114 @@ resource "aws_scheduler_schedule" "c11-Fariha-stack-exchange-etl-schedule-terraf
                 subnets          = [data.aws_subnet.c11-subnet-1.id, data.aws_subnet.c11-subnet-2.id, data.aws_subnet.c11-subnet-3.id] 
             }
         }
+    }
+}
+
+
+
+# ECS FOR DASHBOARD:
+resource "aws_ecs_task_definition" "c11-Fariha-stack-exchange-ECS-dashboard-terraform" {
+  family = "c11-Fariha-stack-exchange-ECS-dashboard-terraform"
+  requires_compatibilities = ["FARGATE"]
+  network_mode = "awsvpc"
+  execution_role_arn = data.aws_iam_role.execution-role.arn
+  cpu = 1024
+  memory = 2048
+  container_definitions = jsonencode([
+    {
+      name = "c11-Fariha-stack-exchange-ECS-dashboard-terraform"
+      image = "129033205317.dkr.ecr.eu-west-2.amazonaws.com/c11-fariha-stack-exchange-dashboard:latest"
+      cpu = 10
+      memory = 512
+      essential = true
+      portMappings = [
+        {
+            containerPort = 80
+            hostPort = 80
+        },
+        {
+            containerPort = 8501
+            hostPort = 8501       
+        }
+      ]
+      environment= [
+                {
+                    "name": "ACCESS_KEY",
+                    "value": var.AWS_ACCESS_KEY
+                },
+                {
+                    "name": "SECRET_ACCESS_KEY",
+                    "value": var.AWS_SECRET_KEY
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": var.DB_NAME
+                },
+                {
+                    "name": "DB_USERNAME",
+                    "value": var.DB_USERNAME
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": var.DB_PASSWORD
+                },
+                {
+                    "name": "DB_IP",
+                    "value": var.DB_IP
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": var.DB_PORT
+                }
+            ]
+            logConfiguration = {
+                logDriver = "awslogs"
+                options = {
+                    "awslogs-create-group" = "true"
+                    "awslogs-group" = "/ecs/c11-Fariha-stack-exchange-ECS-dashboard-terraform"
+                    "awslogs-region" = "eu-west-2"
+                    "awslogs-stream-prefix" = "ecs"
+                }
+            }
+    },
+  ])
+}
+
+
+# SERVICE TO START DASHBOARD:
+
+resource "aws_security_group" "c11-fariha-stack-exchange-dashboard-sg-terraform" {
+    name = "c11-fariha-stack-exchange-dashboard-sg-terraform"
+    description = "Security group for connecting to dashboard"
+    vpc_id = data.aws_vpc.c11-vpc.id
+
+    egress {
+        from_port   = 0
+        to_port     = 0
+        protocol    = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+    ingress {
+        from_port   = 8501
+        to_port     = 8501
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+
+}
+
+resource "aws_ecs_service" "c11-Fariha-stack-exchange-ECS-dashboard-service-terraform" {
+    name = "c11-Fariha-dashboard-service-terraform"
+    cluster = data.aws_ecs_cluster.c11-cluster.id
+    task_definition = aws_ecs_task_definition.c11-Fariha-stack-exchange-ECS-dashboard-terraform.arn
+    desired_count = 1
+    launch_type = "FARGATE" 
+    
+    network_configuration {
+        subnets = [data.aws_subnet.c11-subnet-1.id, data.aws_subnet.c11-subnet-2.id, data.aws_subnet.c11-subnet-3.id] 
+        security_groups = [aws_security_group.c11-fariha-stack-exchange-dashboard-sg-terraform.id] 
+        # ^ ["sg-03f4c8759b7419953"] the security group ^
+        assign_public_ip = true
     }
 }
